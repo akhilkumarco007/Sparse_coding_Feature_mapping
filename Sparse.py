@@ -5,7 +5,7 @@ from utils import *
 def main():
     file_names = os.listdir(args.gaze_path)
     save_path = os.path.join(args.save_dir, 'model_')
-    y_, max, min = normalize_input(csv_loader(file_names), 'Normalization')
+    y_, max, min = normalize_input(input_generator(file_names), 'Normalization')
 
     with tf.name_scope('Input'):
         y = tf.placeholder(shape=np.shape(y_), name='Y', dtype=tf.float32)

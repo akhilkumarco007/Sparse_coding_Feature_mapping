@@ -43,10 +43,10 @@ def normalize_input(data, name):
     '''
     with tf.name_scope(name=name):
         normalized = np.transpose(data).astype(float)
-        max_min = normalized[np.where(normalized != 0.0)]
+        # max_min = normalized[np.where(normalized != 0.0)]
         for i in range(len(normalized)):
-            normalized[i] = (normalized[i] - np.min(max_min)) / (np.max(max_min) - np.min(max_min))
-        return np.transpose(normalized), np.max(max_min), np.min(max_min)
+            normalized[i] = (normalized[i] - np.min(normalized)) / (np.max(normalized) - np.min(normalized))
+        return np.transpose(normalized), np.max(normalized), np.min(normalized)
 
 
 def de_normalized(output, max, min):
@@ -63,7 +63,18 @@ def de_normalized(output, max, min):
 
 
 def input_generator(file_names, n_clust, n_sub, cluster_method, sub_length):
-    # mat = np.zeros(shape=[(n_sub * len(file_names)), (n_clust / n_sub)], dtype=float)
+    '''
+    Creates a matrix from the gaze data. Gaze data from each file is clustered to n_clust points using either HR
+    clustering or KM clustering. These n_clust points are flattened to 2 * n_clust values and each of these 2 * n_clust
+    values are divided in n_sub subsequences of length sub_length. The columns of the matrix correspond to these gaze
+    subsequences of length sub_length flattened into 2 * sub_length values.
+    :param file_names: Gaze files names as the list of strings.
+    :param n_clust: Number of clusters as an integer.
+    :param n_sub: Number of Sub seqeunces per image as an integer
+    :param cluster_method: Clustering method used as a String. Can be either 'HR' or 'KM'
+    :param sub_length:
+    :return:
+    '''
     mat = []
     for image in file_names:
         gaze = []
@@ -74,10 +85,13 @@ def input_generator(file_names, n_clust, n_sub, cluster_method, sub_length):
                 gaze.append((int(row[0]), int(row[1]), count * 110))
                 count += 1
             gaze = np.array(gaze)
-            if cluster_method == 'HR':
-                cluster_labels = hc(n_clusters=n_clust).fit_predict(gaze)
-            elif cluster_method == 'KM':
-                cluster_labels = km(n_clusters=n_clust).fit_predict(gaze)
+            try:
+                if cluster_method == 'HR':
+                    cluster_labels = hc(n_clusters=n_clust).fit_predict(gaze)
+                elif cluster_method == 'KM':
+                    cluster_labels = km(n_clusters=n_clust).fit_predict(gaze)
+            except:
+                raise ValueError('Choose between "HR" or "KM" as the clustering method')
             result = {i: gaze[np.where(cluster_labels == i)] for i in range(n_clust)}
             centres = []
             for cluster in result:
@@ -85,7 +99,7 @@ def input_generator(file_names, n_clust, n_sub, cluster_method, sub_length):
                 cluster_centre = np.mean(cluster_points, axis=0)
                 centres.append(cluster_centre[0])
                 centres.append(cluster_centre[1])
-            for i in range(0, len(centres), 2 * (n_clust / n_sub)):
+            for i in range(0, len(centres) - (2 * sub_length), 2 * ((n_clust - sub_length)/ n_sub)):
                 mat.append(centres[i:i + (2 * sub_length)])
     mat = np.array(mat)
     return np.transpose(mat)
