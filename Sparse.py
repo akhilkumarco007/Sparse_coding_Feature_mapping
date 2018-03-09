@@ -5,7 +5,7 @@ from utils import *
 def main():
     file_names = os.listdir(args.gaze_path)
     save_path = os.path.join(args.save_dir, 'model_')
-    y_, max, min = normalize_input(input_generator(file_names), 'Normalization')
+    y_, maxi, mini = normalize_input(input_generator(file_names, 500, 25, 'HR', 50), 'Normalization')
 
     with tf.name_scope('Input'):
         y = tf.placeholder(shape=np.shape(y_), name='Y', dtype=tf.float32)
@@ -34,10 +34,11 @@ def main():
             _, summary_tr, loss_r = sess.run([optimizer, merged, sparse_loss], feed_dict={y:y_})
             print("Loss after iteration {0} is: {1}".format(iter, loss_r))
             summary.add_summary(summary_tr)
-        saver.save(sess=sess, save_path=save_path + 'LR=' + str(args.learning_rate))
+        saver.save(sess=sess, save_path=save_path + 'NLR=' + str(args.learning_rate))
         summary.close()
         print("Training Complete")
-        print(" Sparse X: ", de_normalized(sess.run(x), max, min))
+        print(" Sparse X: ", de_normalized(sess.run(x), maxi, mini))
+        print(" D: ", de_normalized(sess.run(d), maxi, mini))
 
 
 if __name__=='__main__':
