@@ -45,7 +45,7 @@ def normalize_input(data, name):
         normalized = np.transpose(data).astype(float)
         # max_min = normalized[np.where(normalized != 0.0)]
         for i in range(len(normalized)):
-            normalized[i] = (normalized[i] - np.min(normalized)) / (np.max(normalized) - np.min(normalized))
+            normalized[i] = (normalized[i]) / (np.max(normalized) - np.min(normalized))
         return np.transpose(normalized), np.max(normalized), np.min(normalized)
 
 
@@ -59,7 +59,7 @@ def de_normalized(output, max, min):
     :return: De-normalized output matrix.
     '''
     output = np.round(output, 2)
-    return (output * (max - min))
+    return(output * (max - min))
 
 
 def input_generator(file_names, n_clust, n_sub, cluster_method, sub_length):

@@ -6,6 +6,8 @@ def main():
     file_names = os.listdir(args.gaze_path)
     save_path = os.path.join(args.save_dir, 'model_')
     y_, maxi, mini = normalize_input(input_generator(file_names, 500, 25, 'HR', 50), 'Normalization')
+    print("Max Value = {0}".format(maxi))
+    print("Min Value = {0}".format(mini))
 
     with tf.name_scope('Input'):
         y = tf.placeholder(shape=np.shape(y_), name='Y', dtype=tf.float32)
