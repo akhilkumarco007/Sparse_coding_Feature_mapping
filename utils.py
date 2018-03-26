@@ -14,7 +14,18 @@ def variable_creator(name, shape):
     '''
     with tf.name_scope(name=name):
         intial = tf.truncated_normal_initializer(stddev=0.01)
-        return tf.get_variable(name=name, shape=shape, initializer=intial)
+        return tf.get_variable(name=name, shape=shape, initializer=intial, dtype=tf.float64)
+
+
+def d_creator(name, n_trainable, base_shape):
+    d = np.zeros(shape=base_shape, dtype=float)
+    normal_distribution = np.random.normal(0, 0.01, [base_shape[0] - n_trainable, n_trainable])
+    for i in range(base_shape[0] - n_trainable):
+        d[i, i:i + n_trainable] = normal_distribution[i]
+    d = tf.get_variable(name, initializer=np.tile(np.tile(np.transpose(d), 25), 102), dtype=tf.float64)
+    d = tf.where(d == 0, tf.stop_gradient(d), d)
+    return d
+
 
 
 def loss(y, x, d, lamb, name):
@@ -72,8 +83,8 @@ def input_generator(file_names, n_clust, n_sub, cluster_method, sub_length):
     :param n_clust: Number of clusters as an integer.
     :param n_sub: Number of Sub seqeunces per image as an integer
     :param cluster_method: Clustering method used as a String. Can be either 'HR' or 'KM'
-    :param sub_length:
-    :return:
+    :param sub_length: Integer length of the sub sequence
+    :return: Input matrix with all the clustered gaze points organized into sub sequences.
     '''
     mat = []
     for image in file_names:
@@ -97,9 +108,9 @@ def input_generator(file_names, n_clust, n_sub, cluster_method, sub_length):
             for cluster in result:
                 cluster_points = np.array(result[cluster])
                 cluster_centre = np.mean(cluster_points, axis=0)
-                centres.append(cluster_centre[0])
-                centres.append(cluster_centre[1])
-            for i in range(0, len(centres) - (2 * sub_length), 2 * ((n_clust - sub_length)/ n_sub)):
+                centres.append(int(cluster_centre[0]))
+                centres.append(int(cluster_centre[1]))
+            # for i in range(0, len(centres) - (2 * sub_length), 2 * ((n_clust - sub_length)/ n_sub)):
+            for i in range(0, len(centres), ((2 * n_clust) / n_sub)):
                 mat.append(centres[i:i + (2 * sub_length)])
-    mat = np.array(mat)
-    return np.transpose(mat)
+    return np.transpose(np.array(mat))

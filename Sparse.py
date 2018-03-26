@@ -5,17 +5,17 @@ from utils import *
 def main():
     file_names = os.listdir(args.gaze_path)
     save_path = os.path.join(args.save_dir, 'model_')
-    y_, maxi, mini = normalize_input(input_generator(file_names, 500, 25, 'HR', 50), 'Normalization')
+    y_, maxi, mini = normalize_input(input_generator(file_names, 500, 25, 'HR', 20), 'Normalization')
     print("Max Value = {0}".format(maxi))
     print("Min Value = {0}".format(mini))
 
     with tf.name_scope('Input'):
-        y = tf.placeholder(shape=np.shape(y_), name='Y', dtype=tf.float32)
+        y = tf.placeholder(shape=np.shape(y_), name='Y', dtype=tf.float64)
 
     with tf.name_scope('Weights'):
-        d = variable_creator('D', [np.shape(y)[0], args.dimension2])
+        d = d_creator('D', args.n_trainable, [np.shape(y)[0] - 5, np.shape(y)[0]])
         tf.summary.histogram('D', d)
-        x = variable_creator('X', [args.dimension2, np.shape(y)[1]])
+        x = variable_creator('X', [tf.Session().run(tf.shape(d))[1], np.shape(y)[1]])
         tf.summary.histogram('X', x)
 
     with tf.name_scope('Loss'):
@@ -24,6 +24,11 @@ def main():
 
     with tf.name_scope('Adam_Optimizer'):
         optimizer = tf.train.AdamOptimizer(learning_rate=args.learning_rate, name='Adam_Opt').minimize(sparse_loss)
+        # params = tf.trainable_variables()
+        # gradients = tf.gradients(sparse_loss, params)
+        # part_d = tf.scatter_nd(tf.where(d == 0), gradients[0], tf.shape(d))
+        #
+        # optimizer = tf.train.AdamOptimizer(args.learning_rate).apply_gradients(zip(gradients, params))
 
     merged = tf.summary.merge_all()
     model = tf.global_variables_initializer()
@@ -36,7 +41,7 @@ def main():
             _, summary_tr, loss_r = sess.run([optimizer, merged, sparse_loss], feed_dict={y:y_})
             print("Loss after iteration {0} is: {1}".format(iter, loss_r))
             summary.add_summary(summary_tr)
-        saver.save(sess=sess, save_path=save_path + 'NLR=' + str(args.learning_rate))
+        saver.save(sess=sess, save_path=save_path + 'extended' + str(args.learning_rate))
         summary.close()
         print("Training Complete")
         print(" Sparse X: ", de_normalized(sess.run(x), maxi, mini))
